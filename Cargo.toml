@@ -1,7 +1,7 @@
 [package]
 name = "container-rack-lib"
 description = "Simple cli tool and library for generating storage shelfs for Smartstore containers" 
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 license-file = "LICENSE"
 

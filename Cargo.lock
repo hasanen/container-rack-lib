@@ -129,7 +129,7 @@ dependencies = [
 
 [[package]]
 name = "container-rack-lib"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "clap",
  "comfy-table",

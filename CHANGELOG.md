@@ -4,6 +4,10 @@
 
 TBD
 
+## 0.3.3 - 2025-05-21
+
+- Updated dependencies
+
 ## 0.3.2 - 2024-10-13
 
 - Added URL for the web UI to README
