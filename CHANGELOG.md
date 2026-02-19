@@ -1,7 +1,17 @@
 # Changelog
 
-## `main` branch- YYYY-MM-DD
+## 1.0.0 - 2026-02-19
 
+### Breaking Changes
+- Renamed `ContainerDimensions` struct to `AssembledDimensions` (affects `GeneratedSvg.container_dimensions` field type)
+- Renamed `Dimensions` struct to `ContainerDimensions` for clarity
+
+### Added
+- Added calculation and display of assembled container rack dimensions
+- Assembled dimensions (width, height, depth) are now calculated and returned in `GeneratedSvg`
+- CLI now displays actual assembled dimensions instead of zeros
+
+### Changed
 - Updated dependencies
 
 ## 0.3.3 - 2025-05-21

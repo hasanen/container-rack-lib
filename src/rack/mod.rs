@@ -18,7 +18,7 @@ pub struct Container {
     pub model: String,
     pub description: String,
     pub links: Vec<ContainerLink>,
-    pub dimensions: Dimensions,
+    pub dimensions: ContainerDimensions,
 }
 
 impl Container {
@@ -30,7 +30,7 @@ impl Container {
 }
 
 #[derive(Debug, Clone)]
-pub struct Dimensions {
+pub struct ContainerDimensions {
     pub width: usize,
     pub depth: usize,
     pub height: usize,
@@ -43,6 +43,17 @@ pub struct ContainerLink {
     pub url: Url,
     pub title: String,
 }
+#[derive(Debug, Clone)]
+pub struct AssembledDimensions {
+    pub width: f32,
+    pub height: f32,
+    pub depth: f32
+}
+#[derive(Debug, Clone)]
+pub struct GeneratedSvg {
+    pub document: Document,
+    pub container_dimensions: AssembledDimensions,
+}
 pub fn generate_svg(
     rows: usize,
     columns: usize,
@@ -50,7 +61,7 @@ pub fn generate_svg(
     container: &Container,
     primary_color: &str,
     secondary_color: &str,
-) -> Document {
+) -> GeneratedSvg {
     let starting_point_x = 0.0;
     let starting_point_y = 0.0;
     let column_width = container.dimensions.width + CLEARANCE_FOR_CONTAINER_WIDTH;
@@ -115,13 +126,29 @@ pub fn generate_svg(
         secondary_color,
     );
 
-    document
+    // Calculate assembled dimensions
+    let assembled_width = (column_width * columns) as f32 
+        + (columns + 1) as f32 * material_thickness;
+    
+    let assembled_height = (container.dimensions.height * rows) as f32 
+        + material_thickness * 2.0;
+    
+    let assembled_depth = container.dimensions.depth as f32;
+    
+    GeneratedSvg {
+        document,
+        container_dimensions: AssembledDimensions {
+            width: assembled_width,
+            height: assembled_height,
+            depth: assembled_depth
+        }
+    }
 }
 
 fn generate_side_panels(
     document: &mut Document,
     starting_point_x: f32,
-    dimensions: &Dimensions,
+    dimensions: &ContainerDimensions,
     rows: usize,
     columns: usize,
     material_thickness: f32,
@@ -195,7 +222,7 @@ fn generate_side_panel_wing_holes(x: f32, y: f32, material_thickness: f32, color
 fn generate_side_panel_outline_path(
     starting_point_x: f32,
     starting_point_y: f32,
-    dimensions: &Dimensions,
+    dimensions: &ContainerDimensions,
     rows: usize,
     material_thickness: f32,
     color: &str,
@@ -236,7 +263,7 @@ fn generate_side_panel_outline_path(
 
 fn generate_top_and_bottom_pieces(
     document: &mut Document,
-    dimensions: &Dimensions,
+    dimensions: &ContainerDimensions,
     starting_point_x: f32,
     columns: usize,
     column_width: f32,
@@ -271,7 +298,7 @@ fn generate_top_and_bottom_pieces(
 
 fn generate_cover_path(
     document: &mut Document,
-    dimensions: &Dimensions,
+    dimensions: &ContainerDimensions,
     starting_point_x: f32,
     starting_point_y: f32,
     columns: usize,
@@ -328,7 +355,7 @@ fn generate_side_tap_path(x: f32, y: f32, material_thickness: f32, color: &str) 
 }
 
 fn generate_top_path(
-    dimensions: &Dimensions,
+    dimensions: &ContainerDimensions,
     starting_point_x: f32,
     starting_point_y: f32,
     columns: usize,
@@ -370,7 +397,7 @@ fn top_width(column_width: f32, columns: usize, material_thickness: f32) -> f32 
 }
 fn generate_side_wing_pair(
     document: &mut Document,
-    dimensions: &Dimensions,
+    dimensions: &ContainerDimensions,
     starting_point_x: f32,
     starting_point_y: f32,
     material_thickness: f32,
@@ -496,4 +523,447 @@ fn second_side_wing_tap_position_from_front() -> usize {
 
 fn fourth_side_wing_tap_position_from_front(box_depth: usize) -> usize {
     box_depth - (SIDE_WING_SLOT_FROM_FRONT + SIDE_WING_SLOT_WIDTH)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Feature: calculate-assembled-dimensions, Property 1: Assembled Width Formula
+    // **Validates: Requirements 1.1, 1.4**
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        
+        #[test]
+        fn test_assembled_width_formula(
+            columns in 1usize..=10,
+            container_width in 50usize..=500,
+            material_thickness in 1.0f32..=20.0,
+        ) {
+            // Create a minimal container with the generated dimensions
+            let container = Container {
+                vendor: "Test".to_string(),
+                model: "Test".to_string(),
+                description: "Test".to_string(),
+                links: vec![],
+                dimensions: ContainerDimensions {
+                    width: container_width,
+                    depth: 100,
+                    height: 100,
+                    side_wing_from_box_top: 10,
+                    side_wing_width: 20,
+                },
+            };
+
+            // Generate SVG with test parameters
+            let result = generate_svg(
+                1, // rows (not relevant for width)
+                columns,
+                material_thickness,
+                &container,
+                "#000000",
+                "#FF0000",
+            );
+
+            // Calculate expected width using the formula
+            let column_width = container_width + CLEARANCE_FOR_CONTAINER_WIDTH;
+            let expected_width = (column_width * columns) as f32 
+                + (columns + 1) as f32 * material_thickness;
+
+            // Verify the assembled width matches the formula
+            prop_assert_eq!(result.container_dimensions.width, expected_width);
+        }
+    }
+
+    // Feature: calculate-assembled-dimensions, Property 2: Assembled Height Formula
+    // **Validates: Requirements 2.1, 2.4**
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        
+        #[test]
+        fn test_assembled_height_formula(
+            rows in 1usize..=10,
+            container_height in 50usize..=500,
+            material_thickness in 1.0f32..=20.0,
+        ) {
+            // Create a minimal container with the generated dimensions
+            let container = Container {
+                vendor: "Test".to_string(),
+                model: "Test".to_string(),
+                description: "Test".to_string(),
+                links: vec![],
+                dimensions: ContainerDimensions {
+                    width: 100,
+                    depth: 100,
+                    height: container_height,
+                    side_wing_from_box_top: 10,
+                    side_wing_width: 20,
+                },
+            };
+
+            // Generate SVG with test parameters
+            let result = generate_svg(
+                rows,
+                1, // columns (not relevant for height)
+                material_thickness,
+                &container,
+                "#000000",
+                "#FF0000",
+            );
+
+            // Calculate expected height using the formula
+            let expected_height = (container_height * rows) as f32 
+                + material_thickness * 2.0;
+
+            // Verify the assembled height matches the formula
+            prop_assert_eq!(result.container_dimensions.height, expected_height);
+        }
+    }
+
+    // Feature: calculate-assembled-dimensions, Property 3: Assembled Depth Equals Container Depth
+    // **Validates: Requirements 3.1, 3.4**
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        
+        #[test]
+        fn test_assembled_depth_equals_container_depth(
+            rows in 1usize..=10,
+            columns in 1usize..=10,
+            container_depth in 100usize..=500,
+            material_thickness in 1.0f32..=20.0,
+        ) {
+            // Create a minimal container with the generated dimensions
+            let container = Container {
+                vendor: "Test".to_string(),
+                model: "Test".to_string(),
+                description: "Test".to_string(),
+                links: vec![],
+                dimensions: ContainerDimensions {
+                    width: 100,
+                    depth: container_depth,
+                    height: 100,
+                    side_wing_from_box_top: 10,
+                    side_wing_width: 20,
+                },
+            };
+
+            // Generate SVG with test parameters
+            let result = generate_svg(
+                rows,
+                columns,
+                material_thickness,
+                &container,
+                "#000000",
+                "#FF0000",
+            );
+
+            // Verify the assembled depth equals container depth
+            // regardless of rows, columns, or material thickness
+            let expected_depth = container_depth as f32;
+            prop_assert_eq!(result.container_dimensions.depth, expected_depth);
+        }
+    }
+
+    // Feature: calculate-assembled-dimensions, Property 4: All Dimensions Positive
+    // **Validates: Requirements 1.3, 2.3, 3.3, 4.2**
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        
+        #[test]
+        fn test_all_dimensions_positive(
+            rows in 1usize..=10,
+            columns in 1usize..=10,
+            container_width in 50usize..=500,
+            container_height in 50usize..=500,
+            container_depth in 100usize..=500,
+            material_thickness in 1.0f32..=20.0,
+        ) {
+            // Create a container with all positive input dimensions
+            let container = Container {
+                vendor: "Test".to_string(),
+                model: "Test".to_string(),
+                description: "Test".to_string(),
+                links: vec![],
+                dimensions: ContainerDimensions {
+                    width: container_width,
+                    depth: container_depth,
+                    height: container_height,
+                    side_wing_from_box_top: 10,
+                    side_wing_width: 20,
+                },
+            };
+
+            // Generate SVG with test parameters
+            let result = generate_svg(
+                rows,
+                columns,
+                material_thickness,
+                &container,
+                "#000000",
+                "#FF0000",
+            );
+
+            // Verify all three dimensions are positive
+            prop_assert!(result.container_dimensions.width > 0.0, 
+                "Width should be positive, got: {}", result.container_dimensions.width);
+            prop_assert!(result.container_dimensions.height > 0.0,
+                "Height should be positive, got: {}", result.container_dimensions.height);
+            prop_assert!(result.container_dimensions.depth > 0.0,
+                "Depth should be positive, got: {}", result.container_dimensions.depth);
+        }
+    }
+
+    // Feature: calculate-assembled-dimensions, Property 5: Calculation Idempotence
+    // **Validates: Requirements 6.4**
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        
+        #[test]
+        fn test_calculation_idempotence(
+            rows in 1usize..=10,
+            columns in 1usize..=10,
+            container_width in 50usize..=500,
+            container_height in 50usize..=500,
+            container_depth in 100usize..=500,
+            material_thickness in 1.0f32..=20.0,
+        ) {
+            // Create a container with random dimensions
+            let container = Container {
+                vendor: "Test".to_string(),
+                model: "Test".to_string(),
+                description: "Test".to_string(),
+                links: vec![],
+                dimensions: ContainerDimensions {
+                    width: container_width,
+                    depth: container_depth,
+                    height: container_height,
+                    side_wing_from_box_top: 10,
+                    side_wing_width: 20,
+                },
+            };
+
+            // Call generate_svg twice with identical inputs
+            let result1 = generate_svg(
+                rows,
+                columns,
+                material_thickness,
+                &container,
+                "#000000",
+                "#FF0000",
+            );
+
+            let result2 = generate_svg(
+                rows,
+                columns,
+                material_thickness,
+                &container,
+                "#000000",
+                "#FF0000",
+            );
+
+            // Verify both GeneratedSvg structures contain identical dimension values
+            prop_assert_eq!(result1.container_dimensions.width, result2.container_dimensions.width,
+                "Width should be identical across calls");
+            prop_assert_eq!(result1.container_dimensions.height, result2.container_dimensions.height,
+                "Height should be identical across calls");
+            prop_assert_eq!(result1.container_dimensions.depth, result2.container_dimensions.depth,
+                "Depth should be identical across calls");
+        }
+    }
+
+    // Unit tests for specific dimension calculations
+    // **Validates: Requirements 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3**
+
+    #[test]
+    fn test_known_values_2x3_rack() {
+        // Test with known values: 2×3 rack with 100mm containers and 5mm material
+        let container = Container {
+            vendor: "Test".to_string(),
+            model: "Test".to_string(),
+            description: "Test".to_string(),
+            links: vec![],
+            dimensions: ContainerDimensions {
+                width: 100,
+                depth: 100,
+                height: 100,
+                side_wing_from_box_top: 10,
+                side_wing_width: 20,
+            },
+        };
+
+        let result = generate_svg(2, 3, 5.0, &container, "#000000", "#FF0000");
+
+        // Calculate expected values
+        // Width: (100 + 4) * 3 + (3 + 1) * 5 = 312 + 20 = 332mm
+        let expected_width = 332.0;
+        // Height: 100 * 2 + 5 * 2 = 200 + 10 = 210mm
+        let expected_height = 210.0;
+        // Depth: 100mm (unchanged)
+        let expected_depth = 100.0;
+
+        assert_eq!(result.container_dimensions.width, expected_width);
+        assert_eq!(result.container_dimensions.height, expected_height);
+        assert_eq!(result.container_dimensions.depth, expected_depth);
+    }
+
+    #[test]
+    fn test_minimum_configuration_1x1() {
+        // Test minimum configuration: 1×1 rack
+        let container = Container {
+            vendor: "Test".to_string(),
+            model: "Test".to_string(),
+            description: "Test".to_string(),
+            links: vec![],
+            dimensions: ContainerDimensions {
+                width: 80,
+                depth: 120,
+                height: 60,
+                side_wing_from_box_top: 10,
+                side_wing_width: 20,
+            },
+        };
+
+        let result = generate_svg(1, 1, 3.0, &container, "#000000", "#FF0000");
+
+        // Calculate expected values
+        // Width: (80 + 4) * 1 + (1 + 1) * 3 = 84 + 6 = 90mm
+        let expected_width = 90.0;
+        // Height: 60 * 1 + 3 * 2 = 60 + 6 = 66mm
+        let expected_height = 66.0;
+        // Depth: 120mm (unchanged)
+        let expected_depth = 120.0;
+
+        assert_eq!(result.container_dimensions.width, expected_width);
+        assert_eq!(result.container_dimensions.height, expected_height);
+        assert_eq!(result.container_dimensions.depth, expected_depth);
+    }
+
+    #[test]
+    fn test_very_small_material_thickness() {
+        // Test edge case: very small material thickness
+        let container = Container {
+            vendor: "Test".to_string(),
+            model: "Test".to_string(),
+            description: "Test".to_string(),
+            links: vec![],
+            dimensions: ContainerDimensions {
+                width: 100,
+                depth: 100,
+                height: 100,
+                side_wing_from_box_top: 10,
+                side_wing_width: 20,
+            },
+        };
+
+        let result = generate_svg(2, 2, 0.5, &container, "#000000", "#FF0000");
+
+        // Calculate expected values
+        // Width: (100 + 4) * 2 + (2 + 1) * 0.5 = 208 + 1.5 = 209.5mm
+        let expected_width = 209.5;
+        // Height: 100 * 2 + 0.5 * 2 = 200 + 1.0 = 201mm
+        let expected_height = 201.0;
+        // Depth: 100mm (unchanged)
+        let expected_depth = 100.0;
+
+        assert_eq!(result.container_dimensions.width, expected_width);
+        assert_eq!(result.container_dimensions.height, expected_height);
+        assert_eq!(result.container_dimensions.depth, expected_depth);
+    }
+
+    #[test]
+    fn test_large_configuration() {
+        // Test edge case: large configuration (5×5 rack)
+        let container = Container {
+            vendor: "Test".to_string(),
+            model: "Test".to_string(),
+            description: "Test".to_string(),
+            links: vec![],
+            dimensions: ContainerDimensions {
+                width: 150,
+                depth: 200,
+                height: 120,
+                side_wing_from_box_top: 10,
+                side_wing_width: 20,
+            },
+        };
+
+        let result = generate_svg(5, 5, 6.0, &container, "#000000", "#FF0000");
+
+        // Calculate expected values
+        // Width: (150 + 4) * 5 + (5 + 1) * 6 = 770 + 36 = 806mm
+        let expected_width = 806.0;
+        // Height: 120 * 5 + 6 * 2 = 600 + 12 = 612mm
+        let expected_height = 612.0;
+        // Depth: 200mm (unchanged)
+        let expected_depth = 200.0;
+
+        assert_eq!(result.container_dimensions.width, expected_width);
+        assert_eq!(result.container_dimensions.height, expected_height);
+        assert_eq!(result.container_dimensions.depth, expected_depth);
+    }
+
+    #[test]
+    fn test_single_row_multiple_columns() {
+        // Test edge case: single row with multiple columns
+        let container = Container {
+            vendor: "Test".to_string(),
+            model: "Test".to_string(),
+            description: "Test".to_string(),
+            links: vec![],
+            dimensions: ContainerDimensions {
+                width: 90,
+                depth: 110,
+                height: 70,
+                side_wing_from_box_top: 10,
+                side_wing_width: 20,
+            },
+        };
+
+        let result = generate_svg(1, 4, 4.0, &container, "#000000", "#FF0000");
+
+        // Calculate expected values
+        // Width: (90 + 4) * 4 + (4 + 1) * 4 = 376 + 20 = 396mm
+        let expected_width = 396.0;
+        // Height: 70 * 1 + 4 * 2 = 70 + 8 = 78mm
+        let expected_height = 78.0;
+        // Depth: 110mm (unchanged)
+        let expected_depth = 110.0;
+
+        assert_eq!(result.container_dimensions.width, expected_width);
+        assert_eq!(result.container_dimensions.height, expected_height);
+        assert_eq!(result.container_dimensions.depth, expected_depth);
+    }
+
+    #[test]
+    fn test_multiple_rows_single_column() {
+        // Test edge case: multiple rows with single column
+        let container = Container {
+            vendor: "Test".to_string(),
+            model: "Test".to_string(),
+            description: "Test".to_string(),
+            links: vec![],
+            dimensions: ContainerDimensions {
+                width: 85,
+                depth: 95,
+                height: 65,
+                side_wing_from_box_top: 10,
+                side_wing_width: 20,
+            },
+        };
+
+        let result = generate_svg(4, 1, 3.5, &container, "#000000", "#FF0000");
+
+        // Calculate expected values
+        // Width: (85 + 4) * 1 + (1 + 1) * 3.5 = 89 + 7 = 96mm
+        let expected_width = 96.0;
+        // Height: 65 * 4 + 3.5 * 2 = 260 + 7 = 267mm
+        let expected_height = 267.0;
+        // Depth: 95mm (unchanged)
+        let expected_depth = 95.0;
+
+        assert_eq!(result.container_dimensions.width, expected_width);
+        assert_eq!(result.container_dimensions.height, expected_height);
+        assert_eq!(result.container_dimensions.depth, expected_depth);
+    }
 }

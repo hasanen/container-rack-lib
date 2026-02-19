@@ -2,7 +2,7 @@ pub mod rack;
 use std::vec;
 use url::Url;
 
-use rack::{Container, ContainerLink, Dimensions};
+use rack::{Container, ContainerLink, ContainerDimensions};
 
 pub use crate::rack::generate_svg;
 
@@ -25,7 +25,7 @@ pub fn supported_containers() -> Vec<Container> {
             title: "SmartStore Classic 3".to_string(),
           }
           ],
-          dimensions: Dimensions {
+          dimensions: ContainerDimensions {
             width: 170,
             depth: 210,
             height: 56,
