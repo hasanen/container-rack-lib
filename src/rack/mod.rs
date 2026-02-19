@@ -52,7 +52,7 @@ pub struct AssembledDimensions {
 #[derive(Debug, Clone)]
 pub struct GeneratedSvg {
     pub document: Document,
-    pub container_dimensions: AssembledDimensions,
+    pub assembled_dimensions: AssembledDimensions,
 }
 pub fn generate_svg(
     rows: usize,
@@ -137,7 +137,7 @@ pub fn generate_svg(
     
     GeneratedSvg {
         document,
-        container_dimensions: AssembledDimensions {
+        assembled_dimensions: AssembledDimensions {
             width: assembled_width,
             height: assembled_height,
             depth: assembled_depth
@@ -572,7 +572,7 @@ mod tests {
                 + (columns + 1) as f32 * material_thickness;
 
             // Verify the assembled width matches the formula
-            prop_assert_eq!(result.container_dimensions.width, expected_width);
+            prop_assert_eq!(result.assembled_dimensions.width, expected_width);
         }
     }
 
@@ -617,7 +617,7 @@ mod tests {
                 + material_thickness * 2.0;
 
             // Verify the assembled height matches the formula
-            prop_assert_eq!(result.container_dimensions.height, expected_height);
+            prop_assert_eq!(result.assembled_dimensions.height, expected_height);
         }
     }
 
@@ -661,7 +661,7 @@ mod tests {
             // Verify the assembled depth equals container depth
             // regardless of rows, columns, or material thickness
             let expected_depth = container_depth as f32;
-            prop_assert_eq!(result.container_dimensions.depth, expected_depth);
+            prop_assert_eq!(result.assembled_dimensions.depth, expected_depth);
         }
     }
 
@@ -705,12 +705,12 @@ mod tests {
             );
 
             // Verify all three dimensions are positive
-            prop_assert!(result.container_dimensions.width > 0.0, 
-                "Width should be positive, got: {}", result.container_dimensions.width);
-            prop_assert!(result.container_dimensions.height > 0.0,
-                "Height should be positive, got: {}", result.container_dimensions.height);
-            prop_assert!(result.container_dimensions.depth > 0.0,
-                "Depth should be positive, got: {}", result.container_dimensions.depth);
+            prop_assert!(result.assembled_dimensions.width > 0.0, 
+                "Width should be positive, got: {}", result.assembled_dimensions.width);
+            prop_assert!(result.assembled_dimensions.height > 0.0,
+                "Height should be positive, got: {}", result.assembled_dimensions.height);
+            prop_assert!(result.assembled_dimensions.depth > 0.0,
+                "Depth should be positive, got: {}", result.assembled_dimensions.depth);
         }
     }
 
@@ -763,11 +763,11 @@ mod tests {
             );
 
             // Verify both GeneratedSvg structures contain identical dimension values
-            prop_assert_eq!(result1.container_dimensions.width, result2.container_dimensions.width,
+            prop_assert_eq!(result1.assembled_dimensions.width, result2.assembled_dimensions.width,
                 "Width should be identical across calls");
-            prop_assert_eq!(result1.container_dimensions.height, result2.container_dimensions.height,
+            prop_assert_eq!(result1.assembled_dimensions.height, result2.assembled_dimensions.height,
                 "Height should be identical across calls");
-            prop_assert_eq!(result1.container_dimensions.depth, result2.container_dimensions.depth,
+            prop_assert_eq!(result1.assembled_dimensions.depth, result2.assembled_dimensions.depth,
                 "Depth should be identical across calls");
         }
     }
@@ -802,9 +802,9 @@ mod tests {
         // Depth: 100mm (unchanged)
         let expected_depth = 100.0;
 
-        assert_eq!(result.container_dimensions.width, expected_width);
-        assert_eq!(result.container_dimensions.height, expected_height);
-        assert_eq!(result.container_dimensions.depth, expected_depth);
+        assert_eq!(result.assembled_dimensions.width, expected_width);
+        assert_eq!(result.assembled_dimensions.height, expected_height);
+        assert_eq!(result.assembled_dimensions.depth, expected_depth);
     }
 
     #[test]
@@ -834,9 +834,9 @@ mod tests {
         // Depth: 120mm (unchanged)
         let expected_depth = 120.0;
 
-        assert_eq!(result.container_dimensions.width, expected_width);
-        assert_eq!(result.container_dimensions.height, expected_height);
-        assert_eq!(result.container_dimensions.depth, expected_depth);
+        assert_eq!(result.assembled_dimensions.width, expected_width);
+        assert_eq!(result.assembled_dimensions.height, expected_height);
+        assert_eq!(result.assembled_dimensions.depth, expected_depth);
     }
 
     #[test]
@@ -866,9 +866,9 @@ mod tests {
         // Depth: 100mm (unchanged)
         let expected_depth = 100.0;
 
-        assert_eq!(result.container_dimensions.width, expected_width);
-        assert_eq!(result.container_dimensions.height, expected_height);
-        assert_eq!(result.container_dimensions.depth, expected_depth);
+        assert_eq!(result.assembled_dimensions.width, expected_width);
+        assert_eq!(result.assembled_dimensions.height, expected_height);
+        assert_eq!(result.assembled_dimensions.depth, expected_depth);
     }
 
     #[test]
@@ -898,9 +898,9 @@ mod tests {
         // Depth: 200mm (unchanged)
         let expected_depth = 200.0;
 
-        assert_eq!(result.container_dimensions.width, expected_width);
-        assert_eq!(result.container_dimensions.height, expected_height);
-        assert_eq!(result.container_dimensions.depth, expected_depth);
+        assert_eq!(result.assembled_dimensions.width, expected_width);
+        assert_eq!(result.assembled_dimensions.height, expected_height);
+        assert_eq!(result.assembled_dimensions.depth, expected_depth);
     }
 
     #[test]
@@ -930,9 +930,9 @@ mod tests {
         // Depth: 110mm (unchanged)
         let expected_depth = 110.0;
 
-        assert_eq!(result.container_dimensions.width, expected_width);
-        assert_eq!(result.container_dimensions.height, expected_height);
-        assert_eq!(result.container_dimensions.depth, expected_depth);
+        assert_eq!(result.assembled_dimensions.width, expected_width);
+        assert_eq!(result.assembled_dimensions.height, expected_height);
+        assert_eq!(result.assembled_dimensions.depth, expected_depth);
     }
 
     #[test]
@@ -962,8 +962,8 @@ mod tests {
         // Depth: 95mm (unchanged)
         let expected_depth = 95.0;
 
-        assert_eq!(result.container_dimensions.width, expected_width);
-        assert_eq!(result.container_dimensions.height, expected_height);
-        assert_eq!(result.container_dimensions.depth, expected_depth);
+        assert_eq!(result.assembled_dimensions.width, expected_width);
+        assert_eq!(result.assembled_dimensions.height, expected_height);
+        assert_eq!(result.assembled_dimensions.depth, expected_depth);
     }
 }

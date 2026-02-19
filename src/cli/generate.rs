@@ -74,7 +74,7 @@ pub fn svg(args: &RackGenerationArgs) {
     };
     let filename_with_extension = format!("{}.svg", filename);
     svg::save(&filename_with_extension, svg).unwrap();
-    println!("Container size: {:.1}mm (W) x {:.1}mm (H) x {:.1}mm (D)", generated_doc.container_dimensions.width, generated_doc.container_dimensions.height, generated_doc.container_dimensions.depth);
+    println!("Container size: {:.1}mm (W) x {:.1}mm (H) x {:.1}mm (D)", generated_doc.assembled_dimensions.width, generated_doc.assembled_dimensions.height, generated_doc.assembled_dimensions.depth);
     println!("Saved to {}", &filename_with_extension);
 }
 

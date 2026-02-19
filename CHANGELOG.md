@@ -1,4 +1,9 @@
 # Changelog
+## 1.0.1 - 2026-02-19
+
+### Changed
+
+- Renamed `container_dimensions` field to `assembled_dimmensions` in `GeneragedSvg` struct
 
 ## 1.0.0 - 2026-02-19
 
