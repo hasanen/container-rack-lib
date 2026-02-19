@@ -2,7 +2,7 @@
 
 ## `main` branch- YYYY-MM-DD
 
-TBD
+- Updated dependencies
 
 ## 0.3.3 - 2025-05-21
 
